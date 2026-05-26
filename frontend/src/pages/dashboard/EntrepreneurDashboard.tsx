@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle } from 'lucide-react';
+import axios from 'axios';
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -11,10 +12,24 @@ import { CollaborationRequest } from '../../types';
 import { getRequestsForEntrepreneur } from '../../data/collaborationRequests';
 import { investors } from '../../data/users';
 
+// TypeScript interface for structural meeting type validation
+interface MeetingType {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
 export const EntrepreneurDashboard: React.FC = () => {
   const { user } = useAuth();
   const [collaborationRequests, setCollaborationRequests] = useState<CollaborationRequest[]>([]);
-  const [recommendedInvestors, setRecommendedInvestors] = useState(investors.slice(0, 3));
+  const [recommendedInvestors] = useState(investors.slice(0, 3)); // FIXED: Removed unused setRecommendedInvestors reference
+  
+  // LIVE NETWORK STATES WITH TYPE VALIDATION
+  const [meetings, setMeetings] = useState<MeetingType[]>([]);
+  const [loadingMeetings, setLoadingMeetings] = useState<boolean>(true);
   
   useEffect(() => {
     if (user) {
@@ -22,6 +37,19 @@ export const EntrepreneurDashboard: React.FC = () => {
       const requests = getRequestsForEntrepreneur(user.id);
       setCollaborationRequests(requests);
     }
+
+    const fetchLiveMeetings = async () => {
+      try {
+        const response = await axios.get<MeetingType[]>('http://localhost:5000/api/meetings/list');
+        setMeetings(response.data);
+      } catch (error) {
+        console.error("Error connecting with structural meetings API:", error);
+      } finally {
+        setLoadingMeetings(false);
+      }
+    };
+
+    fetchLiveMeetings();
   }, [user]);
   
   const handleRequestStatusUpdate = (requestId: string, status: 'accepted' | 'rejected') => {
@@ -35,6 +63,9 @@ export const EntrepreneurDashboard: React.FC = () => {
   if (!user) return null;
   
   const pendingRequests = collaborationRequests.filter(req => req.status === 'pending');
+  
+  // FIXED: Explicit type annotation added for type-safe filter arrays
+  const verifiedUpcomingMeetingsCount = meetings.filter((m: MeetingType) => m.status === 'accepted').length;
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -93,7 +124,9 @@ export const EntrepreneurDashboard: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-accent-700">Upcoming Meetings</p>
-                <h3 className="text-xl font-semibold text-accent-900">2</h3>
+                <h3 className="text-xl font-semibold text-accent-900">
+                  {loadingMeetings ? "..." : verifiedUpcomingMeetingsCount}
+                </h3>
               </div>
             </div>
           </CardBody>
