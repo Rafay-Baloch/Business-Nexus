@@ -30,6 +30,9 @@ import { DealsPage } from './pages/deals/DealsPage';
 // Chat Pages
 import { ChatPage } from './pages/chat/ChatPage';
 
+// Milestone 6: Payments Page Import [Added Safely Here]
+import PaymentDashboard from './pages/payments/PaymentDashboard';
+
 function App() {
   return (
     <AuthProvider>
@@ -82,6 +85,11 @@ function App() {
           
           <Route path="/deals" element={<DashboardLayout />}>
             <Route index element={<DealsPage />} />
+          </Route>
+
+          {/* Milestone 6: Payments Active View Route [Added Safely Here Inside Dashboard Structure] */}
+          <Route path="/payments" element={<DashboardLayout />}>
+            <Route index element={<PaymentDashboard />} />
           </Route>
           
           {/* Chat Routes */}
