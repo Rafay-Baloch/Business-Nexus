@@ -22,20 +22,30 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection (Bypass setup)
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('Nexus MongoDB Connected successfully!'))
+// -------------------------------------------------------------
+// SECURE & CRASH-PROOF MONGODB CONNECTION
+// -------------------------------------------------------------
+const dbURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/nexus_mock';
+
+mongoose.connect(dbURI)
+  .then(() => console.log('🚀 Nexus MongoDB Connected successfully!'))
   .catch(err => {
-    console.log('Database connection bypassed. Local server dashboard ready!');
+    console.log('⚠️ Database connection error. Bypassed safely for Local Dashboard!');
   });
 
-// Define Routes
+// -------------------------------------------------------------
+// DEFINE ROUTES
+// -------------------------------------------------------------
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/meetings', require('./routes/meetingRoutes'));
 app.use('/api/documents', require('./routes/documentRoutes'));
+
+// Milestone 6: Payment Routes Link
+app.use('/api/payments', require('./routes/paymentRoutes'));
+
 // Test Route
 app.get('/', (req, res) => {
-  res.send('Nexus Backend Server with WebRTC Signaling is Running!');
+  res.send('Nexus Backend Server with WebRTC & Payments is Running!');
 });
 
 // -------------------------------------------------------------
@@ -49,25 +59,22 @@ io.on('connection', (socket) => {
     socket.join(roomId);
     console.log(`👤 User [${userId}] joined call room: [${roomId}]`);
     
-    // Broadcast warning/alert to other members that a new user has joined
+    // Broadcast to other members that a new user has joined
     socket.to(roomId).emit('user-connected', userId);
   });
 
   // 2. Sending WebRTC Offer
   socket.on('sending-video-offer', (data) => {
-    // data contains: { roomId, offer }
     socket.to(data.roomId).emit('video-offer-received', data.offer);
   });
 
   // 3. Sending WebRTC Answer
   socket.on('sending-video-answer', (data) => {
-    // data contains: { roomId, answer }
     socket.to(data.roomId).emit('video-answer-received', data.answer);
   });
 
-  // 4. ICE Candidates sharing (Network connection paths)
+  // 4. ICE Candidates sharing
   socket.on('sending-ice-candidate', (data) => {
-    // data contains: { roomId, candidate }
     socket.to(data.roomId).emit('ice-candidate-received', data.candidate);
   });
 
@@ -79,7 +86,7 @@ io.on('connection', (socket) => {
 // -------------------------------------------------------------
 
 const PORT = process.env.PORT || 5000;
-// CRITICAL: Change app.listen to server.listen so socket works!
+// server.listen use karna zaroori hai taake Socket.io aur server crash na ho
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
