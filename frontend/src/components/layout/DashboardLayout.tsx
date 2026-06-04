@@ -6,22 +6,32 @@ import { Sidebar } from './Sidebar';
 
 export const DashboardLayout: React.FC = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const token = localStorage.getItem('token');
   
-  // Safely print user object or check existence to satisfy unused variable check completely
-  if (user) {
-    console.log("Nexus Protected Operational Session Core Verified for Profile ID:", user.id);
-  }
-  
+  // 1. Loading State Check
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
       </div>
     );
   }
   
-  if (!isAuthenticated && !localStorage.getItem('token')) {
+  // 2. Strict Authentication Guard Fallback
+  if (!isAuthenticated && !token) {
     return <Navigate to="/login" replace />;
+  }
+  
+  // 3. Prevent crash if user profile properties are during hydration state
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary-600 mx-auto mb-2"></div>
+          <p className="text-gray-500 text-sm">Syncing secure profile stream...</p>
+        </div>
+      </div>
+    );
   }
   
   return (
