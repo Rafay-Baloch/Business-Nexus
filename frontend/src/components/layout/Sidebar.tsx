@@ -19,7 +19,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, text }) => {
       className={({ isActive }) => 
         `flex items-center py-2.5 px-4 rounded-md transition-colors duration-200 ${
           isActive 
-            ? 'bg-primary-50 text-primary-700' 
+            ? 'bg-blue-50 text-blue-700 shadow-sm font-semibold' 
             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
         }`
       }
@@ -33,32 +33,37 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, text }) => {
 export const Sidebar: React.FC = () => {
   const { user } = useAuth();
   
-  if (!user) return null;
+  // Safe parsing fallback from cache to keep layout drawing during async thread lags
+  const cachedUserRaw = localStorage.getItem('business_nexus_user');
+  const fallbackUser = cachedUserRaw ? JSON.parse(cachedUserRaw) : null;
+  const activeUser = user || fallbackUser;
   
-  // Define sidebar items based on user role (Milestone 6 Payments Added Safely Here)
+  // Dynamic role fallback evaluation
+  const activeRole = activeUser?.role ? activeUser.role.toLowerCase() : 'entrepreneur';
+  const activeId = activeUser?.id || 'me';
+  
+  // Define sidebar items based on active role
   const entrepreneurItems = [
-    { to: '/dashboard/entrepreneur', icon: <Home size={20} />, text: 'Dashboard' },
-    { to: '/profile/entrepreneur/' + user.id, icon: <Building2 size={20} />, text: 'My Startup' },
+    { to: `/dashboard/entrepreneur`, icon: <Home size={20} />, text: 'Dashboard' },
+    { to: `/profile/entrepreneur/${activeId}`, icon: <Building2 size={20} />, text: 'My Startup' },
     { to: '/investors', icon: <CircleDollarSign size={20} />, text: 'Find Investors' },
     { to: '/messages', icon: <MessageCircle size={20} />, text: 'Messages' },
     { to: '/notifications', icon: <Bell size={20} />, text: 'Notifications' },
-    { to: '/documents', icon: <FileText size={20} />, text: 'Documents' },
-    { to: '/payments', icon: <CreditCard size={20} />, text: 'Payments' }, // Added for Entrepreneur
+    { to: '/dashboard/documents', icon: <FileText size={20} />, text: 'Documents' },
+    { to: '/dashboard/payments', icon: <CreditCard size={20} />, text: 'Payments' },
   ];
   
   const investorItems = [
-    { to: '/dashboard/investor', icon: <Home size={20} />, text: 'Dashboard' },
-    { to: '/profile/investor/' + user.id, icon: <CircleDollarSign size={20} />, text: 'My Portfolio' },
+    { to: `/dashboard/investor`, icon: <Home size={20} />, text: 'Dashboard' },
+    { to: `/profile/investor/${activeId}`, icon: <CircleDollarSign size={20} />, text: 'My Portfolio' },
     { to: '/entrepreneurs', icon: <Users size={20} />, text: 'Find Startups' },
     { to: '/messages', icon: <MessageCircle size={20} />, text: 'Messages' },
     { to: '/notifications', icon: <Bell size={20} />, text: 'Notifications' },
     { to: '/deals', icon: <FileText size={20} />, text: 'Deals' },
-    { to: '/payments', icon: <CreditCard size={20} />, text: 'Payments' }, // Added for Investor
+    { to: '/dashboard/payments', icon: <CreditCard size={20} />, text: 'Payments' },
   ];
   
-  // Dynamic conditional evaluation check to verify active dashboard persona view matching local configuration token
-  const activeRole = user.role ? user.role.toLowerCase() : 'entrepreneur';
-  const sidebarItems = activeRole === 'entrepreneur' ? entrepreneurItems : investorItems;
+  const sidebarItems = activeRole === 'investor' ? investorItems : entrepreneurItems;
   
   // Common items at the bottom
   const commonItems = [
@@ -67,7 +72,7 @@ export const Sidebar: React.FC = () => {
   ];
   
   return (
-    <div className="w-64 bg-white h-full border-r border-gray-200 hidden md:block">
+    <div className="w-64 bg-white h-[calc(100vh-4rem)] border-r border-gray-200 hidden md:block sticky top-16 z-30">
       <div className="h-full flex flex-col">
         <div className="flex-1 py-4 overflow-y-auto">
           <div className="px-3 space-y-1">
@@ -104,7 +109,7 @@ export const Sidebar: React.FC = () => {
             <h4 className="text-sm font-medium text-gray-900 mt-1">Contact Support</h4>
             <a 
               href="mailto:support@businessnexus.com" 
-              className="mt-2 inline-flex items-center text-xs font-medium text-primary-600 hover:text-primary-500"
+              className="mt-2 inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-500"
             >
               support@businessnexus.com
             </a>
