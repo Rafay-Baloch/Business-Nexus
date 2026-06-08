@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-// TypeScript Interface for Transaction structure
 interface Transaction {
     _id: string;
     referenceId: string;
@@ -17,10 +16,29 @@ const PaymentDashboard: React.FC = () => {
     const [balance, setBalance] = useState<number>(5000); // Initial Mock Balance
     const [message, setMessage] = useState<string>('');
 
-    // Backend se Transaction History load karne ka function
+    // Helper function to extract auth configurations dynamically
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem('business_nexus_token') || localStorage.getItem('token');
+        return {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        };
+    };
+
+    // Backend se Transaction History load karne ka function (Dynamic URL Routing)
     const fetchHistory = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/payments/history');
+            const res = await fetch('/api/payments/history', {
+                method: 'GET',
+                headers: getAuthHeaders()
+            });
+            
+            // Auto logout check bypass logic if session fails
+            if (res.status === 401 || res.status === 403) {
+                 console.warn("Session unverified for payment vault data stream mapping");
+                 return;
+            }
+
             const data = await res.json();
             if (data.success) {
                 setHistory(data.history);
@@ -32,6 +50,7 @@ const PaymentDashboard: React.FC = () => {
 
     useEffect(() => {
         fetchHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Deposit handler
@@ -40,9 +59,9 @@ const PaymentDashboard: React.FC = () => {
         if (!amount || parseFloat(amount) <= 0) return alert("Please enter a valid amount.");
 
         try {
-            const res = await fetch('http://localhost:5000/api/payments/deposit', {
+            const res = await fetch('/api/payments/deposit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ amount })
             });
             const data = await res.json();
@@ -65,9 +84,9 @@ const PaymentDashboard: React.FC = () => {
         if (parseFloat(amount) > balance) return alert("Insufficient wallet balance for this transaction!");
 
         try {
-            const res = await fetch('http://localhost:5000/api/payments/transfer', {
+            const res = await fetch('/api/payments/transfer', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ recipientEmail: email, amount })
             });
             const data = await res.json();

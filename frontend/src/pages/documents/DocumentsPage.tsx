@@ -20,11 +20,21 @@ export const DocumentsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
-  // FETCH LIST FROM SERVER
+  // Helper function to extract auth token safely with explicit header config
+  const getAuthConfig = () => {
+    const token = localStorage.getItem('business_nexus_token') || localStorage.getItem('token');
+    return {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : ''
+      }
+    };
+  };
+
+  // FETCH LIST FROM LIVE SERVER (Hardcoded localhost endpoints completely removed!)
   const fetchLiveDocuments = async () => {
     try {
-      const response = await axios.get<DocumentType[]>('http://localhost:5000/api/documents/repository');
-      // If server returns data, use it. Otherwise keep local ones.
+      const response = await axios.get<DocumentType[]>('/api/documents/repository', getAuthConfig());
+      
       if (response.data && response.data.length > 0) {
         setDocuments(response.data);
       } else {
@@ -60,11 +70,12 @@ export const DocumentsPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchLiveDocuments();
-  }, []);
+useEffect(() => {
+  fetchLiveDocuments();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
-  // FIXED UPLOAD HANDLER WITH IMMEDIATE UI UPDATE
+  // FIXED LIVE UPLOAD HANDLER WITH AUTHORIZATION HEADERS
   const handleUploadSimulation = async () => {
     setIsUploading(true);
     const nextVersion = documents.length + 1;
@@ -85,10 +96,10 @@ export const DocumentsPage: React.FC = () => {
         fileUrl: newDocLocal.fileUrl
       };
 
-      // Hit our backend upload API
-      await axios.post('http://localhost:5000/api/documents/upload', dummyPayload);
+      // Hit our backend live upload API with secure config headers
+      await axios.post('/api/documents/upload', dummyPayload, getAuthConfig());
       
-      // OPTIMISTIC UPDATE: Direct state update taake loading ke baad fauran screen par show ho!
+      // OPTIMISTIC UPDATE: Direct state update
       setDocuments(prevDocs => [newDocLocal, ...prevDocs]);
       
     } catch (error) {
@@ -223,7 +234,7 @@ export const DocumentsPage: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="p-2 text-error-600 hover:text-error-700"
+                          className="p-2 text-red-600 hover:text-red-700"
                           aria-label="Delete"
                         >
                           <Trash2 size={18} />
