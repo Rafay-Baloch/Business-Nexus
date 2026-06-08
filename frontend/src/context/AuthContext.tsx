@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { User, UserRole, AuthContextType, RegisterCredentials } from '../types';
+import { User, UserRole, AuthContextType } from '../types';
 import { users } from '../data/users';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -12,7 +12,9 @@ const USER_STORAGE_KEY = 'business_nexus_user';
 const TOKEN_STORAGE_KEY = 'business_nexus_token';
 const RESET_TOKEN_KEY = 'business_nexus_reset_token';
 
-// Auth Provider Component
+// LIVE BACKEND PRODUCTION URL
+const BACKEND_URL = 'https://business-nexus-production-2a96.up.railway.app';
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const backendRole = role === 'entrepreneur' ? 'Entrepreneur' : 'Investor';
 
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post(`${BACKEND_URL}/api/auth/login`, {
         email,
         password,
         role: backendRole
@@ -69,16 +71,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 2. LIVE REGISTER INTEGRATION WITH BACKEND (Object Parameters Fixed!)
-  const register = async (credentials: RegisterCredentials): Promise<void> => {
+  // 2. LIVE REGISTER INTEGRATION
+  const register = async (name: string, email: string, password: string, role: UserRole): Promise<void> => {
     setIsLoading(true);
     try {
-      // RegisterPage se aaye hue object ko destructure karein
-      const { name, email, password, role } = credentials;
       const backendRole = role === 'entrepreneur' ? 'Entrepreneur' : 'Investor';
 
-      // Express API hit karein
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
+      const response = await axios.post(`${BACKEND_URL}/api/auth/register`, {
         name,
         email,
         password,
@@ -88,7 +87,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         preferences: ''
       });
 
-      // Crash se bachne ke liye token check lagayein
       const userToken = response.data?.token || "mock_jwt_token_nexus_2026_dev_bypass";
 
       const newUser: User = {
@@ -102,7 +100,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: new Date().toISOString()
       };
 
-      // State aur Storage dono bhar dein taake direct login ho jaye aur white screen na aaye
       setUser(newUser);
       localStorage.setItem(TOKEN_STORAGE_KEY, userToken);
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
@@ -198,7 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Custom hook for using auth context
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
